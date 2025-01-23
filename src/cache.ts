@@ -6,7 +6,7 @@ export type Record<T> = {
 };
 
 export type Cache<T> = {
-  get: (key: Key) => Promise<Record<T> | undefined> | undefined;
-  set: (key: Key, value: Promise<Record<T> | undefined>) => Promise<void>;
+  get: (key: Key) => Promise<Record<T> | undefined>;
+  set: (key: Key, record: Record<T>) => Promise<void>;
   delete: (key: Key) => Promise<void>;
 };

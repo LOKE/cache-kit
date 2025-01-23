@@ -1,6 +1,8 @@
 import { Cache, Key, Record } from "./cache";
 
 export class CompositeCache<T> implements Cache<T> {
+  private inflights = new Map<string, Promise<T>>();
+
   constructor(private caches: Cache<T>[]) {}
 
   async get(key: string): Promise<Record<T> | undefined> {
@@ -12,10 +14,7 @@ export class CompositeCache<T> implements Cache<T> {
     return undefined;
   }
 
-  async set(
-    key: string,
-    record: Promise<Record<T> | undefined>
-  ): Promise<void> {
+  async set(key: string, record: Record<T>): Promise<void> {
     await Promise.all(this.caches.map((cache) => cache.set(key, record)));
   }
 
@@ -23,40 +22,50 @@ export class CompositeCache<T> implements Cache<T> {
     await Promise.all(this.caches.map((cache) => cache.delete(key)));
   }
 
-  async apply(
+  apply(
     key: Key,
     promiseFn: () => Promise<{ value: T; ttl: number }>
   ): Promise<T> {
-    for (let i = 0; i < this.caches.length; i++) {
-      const recordP = this.caches[i].get(key);
-      if (recordP == undefined) continue;
+    let inflight = this.inflights.get(key);
 
-      // Backfill caches
-      for (let j = 0; j < i; j++) {
-        // TODO: catch and log
-        this.caches[j].set(key, recordP);
-      }
+    if (!inflight) {
+      inflight = (async (): Promise<T> => {
+        try {
+          for (let i = 0; i < this.caches.length; i++) {
+            const record = await this.caches[i].get(key);
+            if (record == undefined) continue;
 
-      const record = await recordP;
+            // Backfill caches
+            for (let j = 0; j < i; j++) {
+              // TODO: catch and log
+              this.caches[j].set(key, record);
+            }
 
-      if (record !== undefined) return record.value;
+            return record.value;
+          }
+
+          // TODO: handle errors
+          const record = await promiseFn().then((result) => {
+            return {
+              value: result.value,
+              expiresAt: Date.now() + result.ttl,
+            };
+          });
+
+          for (const cache of this.caches) {
+            // TODO: catch and log
+            cache.set(key, record);
+          }
+
+          return record?.value;
+        } finally {
+          this.inflights.delete(key);
+        }
+      })();
+
+      this.inflights.set(key, inflight);
     }
 
-    // TODO: handle errors
-    const recordP = promiseFn().then((result) => {
-      return {
-        value: result.value,
-        expiresAt: Date.now() + result.ttl,
-      };
-    });
-
-    for (const cache of this.caches) {
-      // TODO: catch and log
-      cache.set(key, recordP);
-    }
-
-    const record = await recordP;
-
-    return record?.value;
+    return inflight;
   }
 }

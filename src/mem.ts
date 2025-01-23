@@ -9,48 +9,32 @@ type MapLike<T> = {
 export class MemCache<T> implements Cache<T> {
   private timers = new Map<Key, number>();
 
-  constructor(
-    private cache: MapLike<Promise<Record<T> | undefined>> = new Map()
-  ) {}
+  constructor(private cache: MapLike<Record<T>> = new Map()) {}
 
-  get(key: Key): Promise<Record<T> | undefined> | undefined {
+  async get(key: Key): Promise<Record<T> | undefined> {
     const record = this.cache.get(key);
 
     if (record === undefined) return undefined;
 
-    // if (record.expiresAt < Date.now()) {
-    //   this.cache.delete(key);
-    //   return undefined;
-    // }
+    if (record.expiresAt < Date.now()) {
+      this.cache.delete(key);
+      return undefined;
+    }
 
     return record;
   }
 
-  set(key: Key, recordP: Promise<Record<T> | undefined>): Promise<void> {
-    this.delete(key);
-
-    const storeP = recordP.then((record) => {
-      if (record === undefined) {
-        if (this.cache.get(key) === storeP) {
-          this.cache.delete(key);
-        }
-        return;
+  set(key: Key, record: Record<T>): Promise<void> {
+    const ttl = record.expiresAt - Date.now();
+    const timer = setTimeout(() => {
+      if (this.cache.get(key) === record) {
+        this.cache.delete(key);
       }
+    }, ttl);
 
-      const ttl = record.expiresAt - Date.now();
+    this.timers.set(key, timer);
 
-      const timer = setTimeout(() => {
-        if (this.cache.get(key) === storeP) {
-          this.cache.delete(key);
-        }
-      }, ttl);
-
-      this.timers.set(key, timer);
-
-      return record;
-    });
-
-    this.cache.set(key, storeP);
+    this.cache.set(key, record);
 
     return Promise.resolve();
   }

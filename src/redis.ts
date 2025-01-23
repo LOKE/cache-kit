@@ -11,14 +11,7 @@ export class RedisCache<T> implements Cache<T> {
     return JSON.parse(rawData);
   }
 
-  async set(
-    key: string,
-    recordP: Promise<Record<T> | undefined>
-  ): Promise<void> {
-    const record = await recordP;
-
-    if (record === undefined) return;
-
+  async set(key: string, record: Record<T>): Promise<void> {
     await this.client.set(
       key,
       JSON.stringify(record),

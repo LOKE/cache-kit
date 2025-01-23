@@ -1,41 +1,65 @@
-import { Cache, Key } from "./cache";
+import { Cache, Key, Record } from "./cache";
 
-type Record<T> = {
-  value: Promise<T | undefined>;
-  expiresAt: number;
-  timer: number;
+type MapLike<T> = {
+  get(key: Key): T | undefined;
+  set(key: Key, value: T): void;
+  delete(key: Key): void;
 };
 
 export class MemCache<T> implements Cache<T> {
-  constructor(private cache: Map<Key, Record<T>>) {}
+  private timers = new Map<Key, number>();
 
-  get(key: Key): Promise<T | undefined> | undefined {
+  constructor(
+    private cache: MapLike<Promise<Record<T> | undefined>> = new Map()
+  ) {}
+
+  get(key: Key): Promise<Record<T> | undefined> | undefined {
     const record = this.cache.get(key);
 
     if (record === undefined) return undefined;
 
-    if (record.expiresAt < Date.now()) {
-      this.cache.delete(key);
-      return undefined;
-    }
+    // if (record.expiresAt < Date.now()) {
+    //   this.cache.delete(key);
+    //   return undefined;
+    // }
 
-    return record.value;
+    return record;
   }
 
-  set(key: Key, value: Promise<T | undefined>, ttl: number): Promise<void> {
-    const expiresAt = Date.now() + ttl;
-    const timer = setTimeout(() => this.cache.delete(key), ttl);
+  set(key: Key, recordP: Promise<Record<T> | undefined>): Promise<void> {
+    this.delete(key);
 
-    this.cache.set(key, { value, expiresAt, timer });
+    const storeP = recordP.then((record) => {
+      if (record === undefined) {
+        if (this.cache.get(key) === storeP) {
+          this.cache.delete(key);
+        }
+        return;
+      }
+
+      const ttl = record.expiresAt - Date.now();
+
+      const timer = setTimeout(() => {
+        if (this.cache.get(key) === storeP) {
+          this.cache.delete(key);
+        }
+      }, ttl);
+
+      this.timers.set(key, timer);
+
+      return record;
+    });
+
+    this.cache.set(key, storeP);
 
     return Promise.resolve();
   }
 
   delete(key: Key): Promise<void> {
-    const record = this.cache.get(key);
-
-    if (record !== undefined) {
-      clearTimeout(record.timer);
+    const timer = this.timers.get(key);
+    if (timer !== undefined) {
+      this.timers.delete(key);
+      clearTimeout(timer);
     }
 
     this.cache.delete(key);

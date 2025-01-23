@@ -1,10 +1,10 @@
-import { Cache, Key } from "./cache";
+import { Cache, Key, Record } from "./cache";
 
 export class RedisCache<T> implements Cache<T> {
-  constructor(private client: any, prefix: string) {}
+  constructor(private client: any, private prefix: string) {}
 
-  async get(key: Key): Promise<T | undefined> {
-    const rawData = await this.client.get(key);
+  async get(key: Key): Promise<Record<T> | undefined> {
+    const rawData = await this.client.get(`${this.prefix}:${key}`);
 
     if (rawData === null) return undefined;
 
@@ -13,14 +13,18 @@ export class RedisCache<T> implements Cache<T> {
 
   async set(
     key: string,
-    valueP: Promise<T | undefined>,
-    ttl: number
+    recordP: Promise<Record<T> | undefined>
   ): Promise<void> {
-    const value = await valueP;
+    const record = await recordP;
 
-    if (value === undefined) return;
+    if (record === undefined) return;
 
-    await this.client.set(key, JSON.stringify(value), "PX", ttl);
+    await this.client.set(
+      key,
+      JSON.stringify(record),
+      "PX",
+      record.expiresAt - Date.now()
+    );
   }
 
   async delete(key: string): Promise<void> {

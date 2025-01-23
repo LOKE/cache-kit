@@ -10,7 +10,7 @@ type Client = IORedisClient | IORedisCluster;
 export class RedisCache<T> implements Cache<T> {
   constructor(
     private client: Client,
-    private prefix: string
+    private prefix: string,
   ) {}
 
   async get(key: Key): Promise<Record<T> | undefined> {
@@ -26,7 +26,7 @@ export class RedisCache<T> implements Cache<T> {
       key,
       JSON.stringify(record),
       "PX",
-      record.expiresAt - Date.now()
+      record.expiresAt - Date.now(),
     );
   }
 

@@ -24,7 +24,7 @@ export class CompositeCache<T> implements Cache<T> {
 
   apply(
     key: Key,
-    promiseFn: () => Promise<{ value: T; ttl: number }>
+    promiseFn: () => Promise<{ value: T; ttl: number }>,
   ): Promise<T> {
     let inflight = this.inflights.get(key);
 

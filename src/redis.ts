@@ -23,7 +23,7 @@ export class RedisCache<T> implements Cache<T> {
 
   async set(key: string, record: Record<T>): Promise<void> {
     await this.client.set(
-      key,
+      `${this.prefix}:${key}`,
       JSON.stringify(record),
       "PX",
       record.expiresAt - Date.now(),
@@ -31,6 +31,6 @@ export class RedisCache<T> implements Cache<T> {
   }
 
   async delete(key: string): Promise<void> {
-    await this.client.del(key);
+    await this.client.del(`${this.prefix}:${key}`);
   }
 }

@@ -10,7 +10,7 @@ type Options<T> =
       sizeCalculation: (value: Record<T>, key: string) => number;
     };
 
-export class MemCache<T> implements Cache<T> {
+export class InMemoryCache<T> implements Cache<T> {
   private cache: LRUCache<string, Record<T>>;
 
   constructor(opts: Options<T>) {

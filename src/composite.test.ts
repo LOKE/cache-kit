@@ -3,22 +3,23 @@ import crypto from "crypto";
 import Redis from "ioredis";
 import assert from "assert/strict";
 
-import { CompositeCache, InMemoryCache, RedisCache } from "./index";
+import { CompositeCache, LruMemoryCache, RedisCache } from ".";
 
 const randomId = () => crypto.randomBytes(16).toString("hex");
 
 const { REDIS_HOST = "localhost" } = process.env;
 
 test("apply - should be able to apply caching to a function", async (t) => {
-  const key = randomId(); // cacheKey`${randomId()}:$`;
+  const id = randomId();
 
   const redisClient = new Redis(REDIS_HOST);
   t.after(() => redisClient.quit());
 
-  const cache = new CompositeCache([
-    new InMemoryCache({ max: 10 }),
-    new RedisCache(redisClient, "test"),
-  ]);
+  const cache = new CompositeCache(
+    "test:{id}",
+    [new LruMemoryCache({ max: 10 }), new RedisCache(redisClient)],
+    console,
+  );
 
   let callCount = 0;
 
@@ -27,30 +28,56 @@ test("apply - should be able to apply caching to a function", async (t) => {
     return { value: "bar", ttl: 30000 };
   };
 
-  assert.equal(await cache.apply(key, testFn), "bar");
+  assert.equal(await cache.apply({ id }, testFn), "bar");
   assert.equal(callCount, 1);
-  assert.equal(await cache.apply(key, testFn), "bar");
+  assert.equal(await cache.apply({ id }, testFn), "bar");
+  assert.equal(callCount, 1);
+});
+
+test("apply - number keys should be valid", async (t) => {
+  const id = Math.floor(Math.random() * 1000);
+
+  const redisClient = new Redis(REDIS_HOST);
+  t.after(() => redisClient.quit());
+
+  const cache = new CompositeCache(
+    "test-number:{id}",
+    [new LruMemoryCache({ max: 10 }), new RedisCache(redisClient)],
+    console,
+  );
+
+  let callCount = 0;
+
+  const testFn = async () => {
+    callCount++;
+    return { value: "bar", ttl: 30000 };
+  };
+
+  assert.equal(await cache.apply({ id }, testFn), "bar");
+  assert.equal(callCount, 1);
+  assert.equal(await cache.apply({ id }, testFn), "bar");
   assert.equal(callCount, 1);
 });
 
 test("apply - should only need to call service once in parallel (single flight)", async (t) => {
-  const key = randomId(); // cacheKey`${randomId()}:$`;
+  const id = randomId();
   let applyCount = 0;
   let callCount = 0;
 
   const redisClient = new Redis(REDIS_HOST);
   t.after(() => redisClient.quit());
 
-  const cache = new CompositeCache([
-    new InMemoryCache({ max: 10 }),
-    new RedisCache(redisClient, "test"),
-  ]);
+  const cache = new CompositeCache(
+    "test:{id}",
+    [new LruMemoryCache({ max: 10 }), new RedisCache(redisClient)],
+    console,
+  );
 
   let resolveAllApplied: (_: unknown) => void;
   const allApplied = new Promise((r) => (resolveAllApplied = r));
 
   async function testFn() {
-    const p = cache.apply(key, async () => {
+    const p = cache.apply({ id }, async () => {
       callCount++;
 
       await allApplied;
@@ -75,4 +102,30 @@ test("apply - should only need to call service once in parallel (single flight)"
   assert.equal(first, "bar");
   assert.equal(last, "bar");
   assert.equal(callCount, 1);
+});
+
+test("apply - should pass through errors", async (t) => {
+  const id = randomId();
+
+  const redisClient = new Redis(REDIS_HOST);
+  t.after(() => redisClient.quit());
+
+  const cache = new CompositeCache(
+    "test:{id}",
+    [new LruMemoryCache({ max: 10 }), new RedisCache(redisClient)],
+    console,
+  );
+
+  const errToThrow = new Error("test error");
+
+  const testFn = async () => {
+    throw errToThrow;
+  };
+
+  try {
+    await cache.apply({ id }, testFn);
+    assert.fail("should have thrown");
+  } catch (err) {
+    assert.equal(err, errToThrow);
+  }
 });

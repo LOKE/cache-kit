@@ -10,7 +10,7 @@ test("RedisCache", async (t) => {
   const redisClient = new Redis(REDIS_HOST);
   t.after(() => redisClient.quit());
 
-  const cache = new RedisCache(redisClient, "test");
+  const cache = new RedisCache(redisClient);
 
   await testCache(t, cache);
 });

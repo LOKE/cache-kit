@@ -1,6 +1,6 @@
 {
   "name": "@loke/cache-kit",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "main": "./dist/index.cjs",
   "module": "./dist/index.mjs",
   "types": "./dist/index.d.cts",

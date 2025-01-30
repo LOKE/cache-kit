@@ -37,7 +37,7 @@ jobs:
         with:
           node-version: 20
       - run: npm ci
-      - run: npm lint
+      - run: npm run lint
       - run: ./scripts/example-check.sh
 
   # publish:

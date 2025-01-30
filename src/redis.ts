@@ -44,7 +44,6 @@ export class RedisCacheStore<T> implements CacheStore<T> {
     const buf = Buffer.from(JSON.stringify(record), "utf8");
 
     if (this.keyTemplate !== null) {
-      // JS UTF-16 is 2 bytes per char, 🤞redis client isn't using utf8
       cacheValueSize.observe({ key: this.keyTemplate }, buf.length);
     }
 

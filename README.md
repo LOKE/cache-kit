@@ -15,9 +15,11 @@ const logger = createLogger();
 const redisClient = new Redis();
 
 const cache = new Cache(
-  "users:{userId}",
-  // Caches will be checked in order, and the first cache to return a value
-  // will be used
+  // Keys should be prefixed with the project name to make them unique across
+  // all of LOKE
+  "foo-service:users:fetch:{userId}",
+  // Cache stores will be checked in order, and the first cache to return a
+  // value will be used
   [new LruMemoryCacheStore({ max: 1000 }), new RedisCacheStore(redisClient)],
   logger,
 );

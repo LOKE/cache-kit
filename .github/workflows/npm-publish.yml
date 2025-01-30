@@ -40,16 +40,16 @@ jobs:
       - run: npm run lint
       - run: ./scripts/example-check.sh
 
-  # publish:
-  #   needs: ["test", "lint"]
-  #   runs-on: ubuntu-latest
+  publish:
+    needs: ["test", "lint"]
+    runs-on: ubuntu-latest
 
-  #   steps:
-  #     - uses: actions/checkout@v4
-  #     - uses: actions/setup-node@v4
-  #       with:
-  #         node-version: 20
-  #     - run: npm ci
-  #     - uses: JS-DevTools/npm-publish@v1
-  #       with:
-  #         token: ${{ secrets.NPM_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+      - run: npm ci
+      - uses: JS-DevTools/npm-publish@v1
+        with:
+          token: ${{ secrets.NPM_TOKEN }}

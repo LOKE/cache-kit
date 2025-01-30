@@ -50,6 +50,7 @@ jobs:
         with:
           node-version: 20
       - run: npm ci
-      - uses: JS-DevTools/npm-publish@v1
+      - uses: JS-DevTools/npm-publish@v3
         with:
           token: ${{ secrets.NPM_TOKEN }}
+          access: public

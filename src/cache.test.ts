@@ -2,8 +2,9 @@ import test from "node:test";
 import crypto from "crypto";
 import Redis from "ioredis";
 import assert from "assert/strict";
+import { nullLogger } from "@loke/logger";
 
-import { CompositeCache, LruMemoryCache, RedisCache } from ".";
+import { Cache, LruMemoryCacheStore, RedisCacheStore } from ".";
 
 const randomId = () => crypto.randomBytes(16).toString("hex");
 
@@ -15,10 +16,10 @@ test("apply - should be able to apply caching to a function", async (t) => {
   const redisClient = new Redis(REDIS_HOST);
   t.after(() => redisClient.quit());
 
-  const cache = new CompositeCache(
+  const cache = new Cache(
     "test:{id}",
-    [new LruMemoryCache({ max: 10 }), new RedisCache(redisClient)],
-    console,
+    [new LruMemoryCacheStore({ max: 10 }), new RedisCacheStore(redisClient)],
+    nullLogger,
   );
 
   let callCount = 0;
@@ -40,10 +41,10 @@ test("apply - number keys should be valid", async (t) => {
   const redisClient = new Redis(REDIS_HOST);
   t.after(() => redisClient.quit());
 
-  const cache = new CompositeCache(
+  const cache = new Cache(
     "test-number:{id}",
-    [new LruMemoryCache({ max: 10 }), new RedisCache(redisClient)],
-    console,
+    [new LruMemoryCacheStore({ max: 10 }), new RedisCacheStore(redisClient)],
+    nullLogger,
   );
 
   let callCount = 0;
@@ -67,10 +68,10 @@ test("apply - should only need to call service once in parallel (single flight)"
   const redisClient = new Redis(REDIS_HOST);
   t.after(() => redisClient.quit());
 
-  const cache = new CompositeCache(
+  const cache = new Cache(
     "test:{id}",
-    [new LruMemoryCache({ max: 10 }), new RedisCache(redisClient)],
-    console,
+    [new LruMemoryCacheStore({ max: 10 }), new RedisCacheStore(redisClient)],
+    nullLogger,
   );
 
   let resolveAllApplied: (_: unknown) => void;
@@ -110,10 +111,10 @@ test("apply - should pass through errors", async (t) => {
   const redisClient = new Redis(REDIS_HOST);
   t.after(() => redisClient.quit());
 
-  const cache = new CompositeCache(
+  const cache = new Cache(
     "test:{id}",
-    [new LruMemoryCache({ max: 10 }), new RedisCache(redisClient)],
-    console,
+    [new LruMemoryCacheStore({ max: 10 }), new RedisCacheStore(redisClient)],
+    nullLogger,
   );
 
   const errToThrow = new Error("test error");

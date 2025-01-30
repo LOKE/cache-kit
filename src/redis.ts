@@ -1,10 +1,11 @@
 import { exponentialBuckets, Histogram } from "prom-client";
-import { Cache, Entity } from "./cache";
-
 import type {
   Redis as IORedisClient,
   Cluster as IORedisCluster,
 } from "ioredis";
+
+import { CacheStore, StoreEntity } from "./store";
+import { metrics } from "./metrics";
 
 const cacheValueSize = new Histogram({
   name: "cache_redis_value_size_bytes",
@@ -14,9 +15,11 @@ const cacheValueSize = new Histogram({
   registers: [],
 });
 
+metrics.push(cacheValueSize);
+
 type Client = Pick<IORedisClient | IORedisCluster, "get" | "set" | "del">;
 
-export class RedisCache<T> implements Cache<T> {
+export class RedisCacheStore<T> implements CacheStore<T> {
   private keyTemplate: string | null = null;
 
   constructor(private client: Client) {}
@@ -29,7 +32,7 @@ export class RedisCache<T> implements Cache<T> {
     this.keyTemplate = keyTemplate;
   }
 
-  async get(key: string): Promise<Entity<T> | undefined> {
+  async get(key: string): Promise<StoreEntity<T> | undefined> {
     const rawData = await this.client.get(key);
 
     if (rawData === null) return undefined;
@@ -37,7 +40,7 @@ export class RedisCache<T> implements Cache<T> {
     return JSON.parse(rawData);
   }
 
-  async set(key: string, record: Entity<T>): Promise<void> {
+  async set(key: string, record: StoreEntity<T>): Promise<void> {
     const buf = Buffer.from(JSON.stringify(record), "utf8");
 
     if (this.keyTemplate !== null) {

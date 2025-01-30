@@ -1,9 +1,11 @@
 import { TestContext } from "node:test";
 import assert from "node:assert/strict";
 
-import type { Cache } from "./cache";
+import type { CacheStore } from "./store";
 
-export async function testCache(t: TestContext, cache: Cache<unknown>) {
+export async function testCache(t: TestContext, cache: CacheStore<unknown>) {
+  cache.setKeyTemplate("-- test --");
+
   assert.deepEqual(await cache.get("unset"), undefined);
 
   const cases = [

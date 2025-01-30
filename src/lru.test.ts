@@ -1,10 +1,10 @@
 import test from "node:test";
 
-import { LruMemoryCache } from ".";
-import { testCache } from "./cachetest";
+import { LruMemoryCacheStore } from ".";
+import { testCache } from "./storetest";
 
-test("LruMemoryCache - testCache", async (t) => {
-  const cache = new LruMemoryCache({ max: 100 });
+test("LruMemoryCacheStore - testCache", async (t) => {
+  const cache = new LruMemoryCacheStore({ max: 100 });
 
   await testCache(t, cache);
 });

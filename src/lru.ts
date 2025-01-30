@@ -1,5 +1,24 @@
 import { LRUCache } from "lru-cache";
-import { Cache, Entity } from "./cache";
+import { Counter } from "prom-client";
+
+import { CacheStore, StoreEntity } from "./store";
+import { metrics } from "./metrics";
+
+const evictionsCount = new Counter({
+  name: "cache_lru_evictions_total",
+  help: "Total number of cache evictions",
+  labelNames: ["key"],
+  registers: [],
+});
+
+const setCount = new Counter({
+  name: "cache_lru_sets_total",
+  help: "Total number of cache sets",
+  labelNames: ["key"],
+  registers: [],
+});
+
+metrics.push(evictionsCount, setCount);
 
 type Options<T> =
   | {
@@ -7,15 +26,23 @@ type Options<T> =
     }
   | {
       maxSize: number;
-      sizeCalculation: (value: Entity<T>, key: string) => number;
+      sizeCalculation: (value: StoreEntity<T>, key: string) => number;
     };
 
-export class LruMemoryCache<T> implements Cache<T> {
-  private cache: LRUCache<string, Entity<T>>;
+export class LruMemoryCacheStore<T> implements CacheStore<T> {
+  private cache: LRUCache<string, StoreEntity<T>>;
   private keyTemplate: string | null = null;
 
   constructor(opts: Options<T>) {
-    this.cache = new LRUCache<string, Entity<T>>(opts);
+    this.cache = new LRUCache<string, StoreEntity<T>>({
+      dispose: (key, value, reason) => {
+        if (reason === "evict") {
+          if (!this.keyTemplate) throw new Error("Key template not set");
+          evictionsCount.inc({ key: this.keyTemplate });
+        }
+      },
+      ...opts,
+    });
   }
 
   setKeyTemplate(keyTemplate: string) {
@@ -24,16 +51,22 @@ export class LruMemoryCache<T> implements Cache<T> {
     }
 
     this.keyTemplate = keyTemplate;
+
+    evictionsCount.inc({ key: keyTemplate }, 0);
+    setCount.inc({ key: keyTemplate }, 0);
   }
 
-  async get(key: string): Promise<Entity<T> | undefined> {
+  async get(key: string): Promise<StoreEntity<T> | undefined> {
     return this.cache.get(key);
   }
 
-  set(key: string, record: Entity<T>): Promise<void> {
+  set(key: string, record: StoreEntity<T>): Promise<void> {
     const ttl = record.expiresAt - Date.now();
 
     this.cache.set(key, record, { ttl });
+
+    if (!this.keyTemplate) throw new Error("Key template not set");
+    setCount.inc({ key: this.keyTemplate });
 
     return Promise.resolve();
   }

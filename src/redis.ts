@@ -41,13 +41,16 @@ export class RedisCacheStore<T> implements CacheStore<T> {
   }
 
   async set(key: string, record: StoreEntity<T>): Promise<void> {
+    const ttl = record.expiresAt - Date.now();
+    if (ttl <= 0) return Promise.resolve();
+
     const buf = Buffer.from(JSON.stringify(record), "utf8");
 
     if (this.keyTemplate !== null) {
       cacheValueSize.observe({ key: this.keyTemplate }, buf.length);
     }
 
-    await this.client.set(key, buf, "PX", record.expiresAt - Date.now());
+    await this.client.set(key, buf, "PX", ttl);
   }
 
   async delete(key: string): Promise<void> {

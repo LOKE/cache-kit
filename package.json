@@ -18,7 +18,7 @@
     }
   },
   "scripts": {
-    "test": "tsx --test",
+    "test": "tsx --test ./src/*.test.ts",
     "lint": "eslint . && prettier --check .",
     "build": "pkgroll --sourcemap",
     "prepare": "npm run build"

@@ -62,6 +62,7 @@ export class LruMemoryCacheStore<T> implements CacheStore<T> {
 
   set(key: string, record: StoreEntity<T>): Promise<void> {
     const ttl = record.expiresAt - Date.now();
+    if (ttl <= 0) return Promise.resolve();
 
     this.cache.set(key, record, { ttl });
 

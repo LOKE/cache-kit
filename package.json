@@ -47,7 +47,7 @@
   },
   "peerDependencies": {
     "ioredis": ">=5",
-    "prom-client": ">=14"
+    "prom-client": ">=12"
   },
   "engines": {
     "node": ">=20"

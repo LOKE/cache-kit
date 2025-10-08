@@ -45,7 +45,7 @@ metrics.push(
 
 export class Cache<const KT extends string> {
   private inflights = new Map<string, Promise<unknown>>();
-  private formatKey: (params: KeyParams<KT>) => string;
+  formatKey: (params: KeyParams<KT>) => string;
 
   constructor(
     private keyTemplate: KT,

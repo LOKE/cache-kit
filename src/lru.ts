@@ -77,4 +77,11 @@ export class LruMemoryCacheStore<T> implements CacheStore<T> {
 
     return Promise.resolve();
   }
+
+  replace(key: string, record: StoreEntity<T>): Promise<void> {
+    if (this.cache.has(key)) {
+      return this.set(key, record);
+    }
+    return Promise.resolve();
+  }
 }

@@ -37,7 +37,11 @@ export class RedisCacheStore<T> implements CacheStore<T> {
 
     if (rawData === null) return undefined;
 
-    return JSON.parse(rawData);
+    try {
+      return JSON.parse(rawData);
+    } catch {
+      return undefined;
+    }
   }
 
   async set(key: string, record: StoreEntity<T>): Promise<void> {

@@ -33,7 +33,7 @@ test("CompressedRedisCacheStore", async (t) => {
     },
   );
   await t.test(
-    "RedisCacheStore treats CachedRedisCacheStore entries as misses",
+    "RedisCacheStore treats CompressedRedisCacheStore entries as misses",
     async () => {
       const key = "object";
       const value = { a: 1, b: "c" };

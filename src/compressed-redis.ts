@@ -55,21 +55,21 @@ export class CompressedRedisCacheStore<T> implements CacheStore<T> {
 
     if (rawData === null) return undefined;
 
-    if (
-      rawData
-        .subarray(0, brotli2603MagicBytes.length)
-        .equals(brotli2603MagicBytes)
-    ) {
-      return JSON.parse(
-        (
-          await brotliDecompressAsync(
-            rawData.subarray(brotli2603MagicBytes.length),
-          )
-        ).toString("utf8"),
-      );
-    }
-
     try {
+      if (
+        rawData
+          .subarray(0, brotli2603MagicBytes.length)
+          .equals(brotli2603MagicBytes)
+      ) {
+        return JSON.parse(
+          (
+            await brotliDecompressAsync(
+              rawData.subarray(brotli2603MagicBytes.length),
+            )
+          ).toString("utf8"),
+        );
+      }
+
       return JSON.parse(rawData.toString("utf8"));
     } catch {
       return undefined;

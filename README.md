@@ -59,6 +59,21 @@ const cache = new Cache(
 );
 ```
 
+## CompressedRedisCacheStore
+
+`CompressedRedisCacheStore` acts as a drop in replacement for `RedisCacheStore`. It supports reading uncompressed content created by `RedisCacheStore`, and will compress the stored data if appropriate.
+
+```ts
+const cache = new Cache(
+  "foo-service:users:fetch:{userId}",
+  [
+    new LruMemoryCacheStore({ max: 1000 }),
+    new CompressedRedisCacheStore(redisClient),
+  ],
+  logger,
+);
+```
+
 ## TODO
 
 - [ ] JSON reviver support

@@ -9,6 +9,14 @@ import { metrics } from "./metrics";
 import { brotliCompress, brotliDecompress, constants } from "node:zlib";
 import { promisify } from "node:util";
 
+/*
+Did benchmarking of the compression algorithms available in NodeJS.
+Zstd was the fastest to decompress, but is still experimental in the latest versions of Node.
+Brotli was the second contender, and is available in the versions of NodeJS used in our stack currently.
+
+Given that the data is going to be read far more than it's going to be written to, the cost of compression wasn't considered.
+*/
+
 const brotliCompressAsync = promisify(brotliCompress);
 const brotliDecompressAsync = promisify(brotliDecompress);
 

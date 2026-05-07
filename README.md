@@ -63,6 +63,8 @@ const cache = new Cache(
 
 `CompressedRedisCacheStore` acts as a drop in replacement for `RedisCacheStore`. It supports reading uncompressed content created by `RedisCacheStore`, and will compress the stored data if appropriate.
 
+Applications should be using at least v1.0.4 of `RedisCacheStore` before switching to `CompressedRedisCacheStore`, to avoid errors if the uncompressed store tries to read compressed content during deployment.
+
 ```ts
 const cache = new Cache(
   "foo-service:users:fetch:{userId}",

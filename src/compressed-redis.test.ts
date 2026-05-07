@@ -36,12 +36,31 @@ test("CompressedRedisCacheStore", async (t) => {
     "RedisCacheStore treats CompressedRedisCacheStore entries as misses",
     async () => {
       const key = "object";
-      const value = { a: 1, b: "c" };
+      const value = { a: 1, b: "c", d: new Array(1024).fill(null) };
 
       const expiresAt = Date.now() + 5000;
       await cache.set(key, { value, expiresAt });
 
       assert.deepEqual(await uncompressedCache.get(key), undefined);
+
+      await cache.delete(key);
+    },
+  );
+  await t.test(
+    "CompressedRedisCacheStore works with both small and large objects",
+    async () => {
+      const key = "object";
+      const smallValue = { a: 1, b: "c" };
+      const largeValue = { a: 1, b: "c", d: new Array(1024).fill(null) };
+
+      const expiresAt = Date.now() + 5000;
+      await cache.set(key, { value: smallValue, expiresAt });
+
+      assert.deepEqual(await cache.get(key), { value: smallValue, expiresAt });
+
+      await cache.set(key, { value: largeValue, expiresAt });
+
+      assert.deepEqual(await cache.get(key), { value: largeValue, expiresAt });
 
       await cache.delete(key);
     },

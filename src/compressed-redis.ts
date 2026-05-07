@@ -89,6 +89,12 @@ export class CompressedRedisCacheStore<T> implements CacheStore<T> {
     if (ttl <= 0) return;
 
     const jsonBuffer = Buffer.from(JSON.stringify(record), "utf8");
+    // Don't pay the cost of compression for small enough objects
+    if (jsonBuffer.length < 1024) {
+      await this.client.set(key, jsonBuffer, "PX", ttl);
+      return;
+    }
+
     const buf = Buffer.concat([
       brotli2603MagicBytes,
       await brotliCompressAsync(jsonBuffer, {
